@@ -46,5 +46,4 @@ def validate_url(url: str):
 
 
 if __name__ == '__main__':
-    # validate_url('google.com')
     print(validate_url('https://www.google.com/'))

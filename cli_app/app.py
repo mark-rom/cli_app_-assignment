@@ -1,4 +1,3 @@
-import re
 from http import HTTPStatus
 from typing import Dict, List
 
@@ -7,8 +6,8 @@ from requests import request
 from validators import validate_url
 
 HTTP_METHODS = [
-    'get', 'post', 'put', 'patch', 'delete',
-    'head', 'options', 'trace', 'connect'
+    'GET', 'POST', 'PUT', 'PATCH', 'DELETE',
+    'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'
 ]
 
 
@@ -34,15 +33,6 @@ def _get_input() -> List[str]:
 
 def _is_link(string: str) -> bool:
 
-    # if re.match(
-    # source https://daringfireball.net/2010/07/improved_regex_for_matching_urls
-    # есть еще кириллические урлы, этот зверь их не ест, да и они мало распространены
-    #     r"""(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""",
-    #     string
-    # ):
-    #     return True
-    # return False
-
     try:
         validate_url(string)
 
@@ -52,6 +42,11 @@ def _is_link(string: str) -> bool:
     return True
 
 
+def _is_code_allowed(status_code: int) -> bool:
+
+    return status_code != HTTPStatus.METHOD_NOT_ALLOWED
+
+
 def _get_available_methods(
     link: str, methods_list: List[str] = HTTP_METHODS
 ) -> Dict[str, int]:
@@ -59,11 +54,11 @@ def _get_available_methods(
     avalable_methods = {}
 
     for method in methods_list:
-        # request не принимает урлы типа www.vk.com. Только со схемой
         responce = request(method, link)
+        status_code = responce.status_code
 
-        if responce.status_code != HTTPStatus.METHOD_NOT_ALLOWED:
-            avalable_methods[responce.request.method] = responce.status_code
+        if _is_code_allowed(status_code):
+            avalable_methods[method] = status_code
 
     return avalable_methods
 
@@ -78,7 +73,6 @@ def _iterate_through_lines(lines: List[str]) -> Dict[str, Dict[str, int]]:
             continue
 
         if links.get(line):
-            # проверка на наличие ссылки в ответе
             continue
 
         methods = _get_available_methods(line)
